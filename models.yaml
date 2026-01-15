@@ -1,0 +1,36 @@
+# YOLOv8s-ELDN 模型结构 [cite: 239, 270]
+[cite_start]nc: 6  # 缺陷类别数 [cite: 497]
+scales: # YOLOv8s 基准缩放
+  s: [0.33, 0.50, 1024]
+
+backbone:
+  # [from, repeats, module, args]
+  - [-1, 1, Conv, [64, 3, 2]]  # 0-P1/2
+  - [-1, 1, Conv, [128, 3, 2]] # 1-P2/4
+  - [-1, 3, C2f, [128, True]]
+  - [-1, 1, Conv, [256, 3, 2]] # 3-P3/8
+  - [cite_start][-1, 6, C2f_EMSC, [256, True]] # 改进点1:
+  - [-1, 1, Conv, [512, 3, 2]] # 5-P4/16
+  - [-1, 6, C2f_EMSC, [512, True]]
+  - [-1, 1, Conv, [1024, 3, 2]] # 7-P5/32
+  - [-1, 3, C2f_EMSC, [1024, True]]
+  - [cite_start][-1, 1, SPPF_LSKA, [1024, 5]]   # 改进点2:
+
+head:
+  - [cite_start][-1, 1, DySample, [1024, 2]]    # 改进点3: 
+  - [[-1, 6], 1, Concat, [1]]       # 特征融合
+  - [-1, 3, C2f_EMSC, [512]]
+
+  - [-1, 1, DySample, [512, 2]]
+  - [[-1, 4], 1, Concat, [1]]
+  - [-1, 3, C2f_EMSC, [256]]
+
+  - [-1, 1, Conv, [256, 3, 2]]
+  - [[-1, 12], 1, Concat, [1]]
+  - [-1, 3, C2f_EMSC, [512]]
+
+  - [-1, 1, Conv, [512, 3, 2]]
+  - [[-1, 9], 1, Concat, [1]]
+  - [-1, 3, C2f_EMSC, [1024]]
+
+  - [cite_start][[15, 18, 21], 1, Detect, [nc]] # Detect(Small, Medium, Large) [cite: 236]
